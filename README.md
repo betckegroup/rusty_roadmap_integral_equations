@@ -1,2 +1,2 @@
-# rusty_roadmap_integral_equations
-Talk: A rusty roadmap to integral equations at exascale
+# Talk: A rusty raodmap to integral equations at exascale
+
