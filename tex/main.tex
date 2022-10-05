@@ -316,7 +316,7 @@ Solve $\mathbf{V}\mathbf{c} = \mathbf{b}$
 \begin{minipage}{5cm}
 \small
 \begin{itemize}
-\item Simulation of Zika virus (10m elements) on single compute node\footnotemark
+\item Electrostatic simulation of Zika virus (10m elements) on single compute node\footnotemark
 \item Mass-matrix preconditioned single trace formulation.
 \item FMM acceleration via ExaFMM.
 \end{itemize}
@@ -387,6 +387,30 @@ $$
 
 \end{frame}
 
+\begin{frame}
+    \frametitle{The correction matrix}
+
+    \begin{center}
+        \includegraphics[width=10cm]{../figs/triangles.png}
+    \end{center}
+
+    Problem: Any fast code for $G$ also evaluates the near-field.
+    Near-field can contain adjacent triangles (singular quadrature rules), and
+    non-adjacent triangles (standard triangle Gauss rule).
+
+    \vspace{.5cm}
+
+    The sources and target points in the FMM are arising from the
+    non-singular quadrature rule.
+
+    \vspace{.5cm}
+
+    Solution: After FMM evaluation subtract out the regular quadrature rule
+    contribution from adjacent triangles and add in the correct singular quadrature
+    rule contribution.
+
+\end{frame}
+
 
 
 \begin{frame}
@@ -398,7 +422,7 @@ $$
 \begin{itemize}
 \item Good for higher level logic.
 \item Efficient libs for array processing.
-\item Performance for complex algorithms in Python difficult (FMM).
+\item Performance for complex algorithms in Python (e.g. FMM) difficult\footnotemark.
 \end{itemize}
 \end{minipage} &
 \begin{minipage}[t]{6cm}
@@ -418,6 +442,8 @@ $$
 \end{itemize}
 \end{minipage} & 
 \end{tabular}
+
+\footnotetext{\tiny S. Kailas et. al., \textit{PyExaFMM: an exercise in designing high-performance software with Python and Numba}, to be submitted}
 
 \end{frame}
 
@@ -496,7 +522,7 @@ Design a set of micro-libraries in Rust that can be easily composed into large p
 
 \begin{minipage}{5cm}
 \begin{itemize}
-\item Modeled on Sundar et. al [2011]
+\item Modeled on Sundar et. al\footnotemark
 \item Distributed load-balancing, 2:1 refinement
 \item Full Python interface
 \item Can use Rust or Python MPI communicator
@@ -505,6 +531,9 @@ Design a set of micro-libraries in Rust that can be easily composed into large p
 \begin{minipage}{5cm}
 \includegraphics[width=5cm]{../figs/rusty_tree}
 \end{minipage}
+
+\footnotetext{\tiny H. Sunar, R. S. Sampath, G. Biros, \textit{Bottom Up Construction and 2:1 Balance Refinement of Linear
+Octrees in Parallel}, 30 (2008, pp. 2675 - 2708}
 
 \end{frame}
 
@@ -523,8 +552,8 @@ $A\in\mathbb{C}^{m\times n}$, $U\in\mathbb{C}^{m\times k}$, $V\in\mathbb{C}^{k\t
 \end{minipage}
 \begin{minipage}{5cm}
 \begin{itemize}
-\item Dense QR, SVD Decomposition
-\item Interpolative Decompositions
+\item Dense QR, SVD decomposition
+\item Interpolative decompositions
 \item Randomized low-rank decompositions
 \end{itemize}
 \end{minipage}
@@ -533,7 +562,8 @@ $A\in\mathbb{C}^{m\times n}$, $U\in\mathbb{C}^{m\times k}$, $V\in\mathbb{C}^{k\t
 
 \begin{itemize}
 \item Required for algebraic compression of translation operators.
-\item Currently used Blas/Lapack/ndarray, to be rebased on new linear algebra core.
+\item Currently uses Blas/Lapack/ndarray.
+\item Plan to rebase on new linear algebra core.
 \end{itemize}
 \end{frame}
 
@@ -562,7 +592,7 @@ iteration, rusty-element provides element information).
 \frametitle{Householder - A new linear algebra kernel in Rust}
 
 \begin{center}
-\includegraphics[width=5cm]{../figs/householder}
+\includegraphics[width=8cm]{../figs/householder}
 \end{center}
 
 \begin{itemize}
