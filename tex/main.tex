@@ -24,6 +24,14 @@
   colframe=red!60!black,colback=yellow!50!white,arc=4pt,boxrule=1pt,
   }}
 
+\newcommand\blfootnote[1]{%
+  \begingroup
+  \renewcommand\thefootnote{}\footnote{#1}%
+  \addtocounter{footnote}{-1}%
+  \endgroup
+}
+
+
 \def\bx{\mathbf{x}}
 \def\by{\mathbf{y}}
 
@@ -80,6 +88,8 @@ other collaborators
 
 \end{column}%
 \end{columns}
+
+\blfootnote{\tiny Supported by EPSRC Excalibur grants EP/W026260/1 and EP/W007460/1}
 
 \end{frame}
 
@@ -163,6 +173,42 @@ Solve $\mathbf{V}\mathbf{c} = \mathbf{b}$
 \end{center}
 
 \end{frame}
+
+\begin{frame}
+	\frametitle{The early C++ years of Bempp\footnote{\tiny W. \'{S}migaj et. al., \textit{Solving boundary integral problems with BEM++}, ACM Transactions on Mathematical Software 41 (2015), pp. 1 - 40}}
+	
+	\begin{tabular}{cc}
+		\begin{minipage}{6cm}
+			\begin{center}
+			\includegraphics[width=5cm]{../figs/bempp_cpp_objects}
+			\end{center}
+		\end{minipage} &
+		\begin{minipage}{5cm}
+			\small
+			\begin{itemize}
+			\item Complex object hierarchy
+			\item Highly templated code
+			\item Dependencies on complex packages (Boost, BLAS, Armadillo, Trilinos, DUNE, Intel TBB)
+			\end{itemize}
+		\end{minipage}
+	\end{tabular}
+	
+	\vspace{\baselineskip}
+	
+	\textbf{Python Interface}
+	
+	\begin{itemize}
+		\item Auto-generated with Swig
+		\item Thin layer on C++ code
+		\item Almost no logic in the Python layer, all handled by C++
+	\end{itemize}
+
+\begin{tcolorbox}
+Over time moved all high-level functions into Python, only kept low-level performance critical data structures in C++.
+\end{tcolorbox}
+
+\end{frame}
+
 
 
 \begin{frame}{Fast JIT compiled Galerkin BEM in Python}
@@ -579,7 +625,7 @@ Reference Cell Trait & {\small Basix elements}
 \end{center}
 
 \begin{itemize}
-\item Modeled on Basix (FeniCS finite element evaluation library).
+\item Modeled on Basix (FEeniCS finite element evaluation library).
 \item Generic interface and implementation of element definitions.
 \item Support for higher order triangular and quadrilateral elements.
 \item Separate from grid library (grid library does data distribution and
