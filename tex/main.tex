@@ -13,6 +13,7 @@
 \usepackage[many]{tcolorbox}
 \usepackage[labelformat=empty]{caption,subfig}
 \usepackage[export]{adjustbox}
+\usepackage{tabularx}
 
 %\usepackage[usenames]{color}
 %\usetheme{Madrid}
@@ -50,7 +51,7 @@
 \end{tikzpicture}%
 }
 
-\title{A rusty roadmap to integral equations at exascale}
+\title{Electrostatic simulations at Exascale – The beginning of a rusty journey}
 %\author{\texorpdfstring{Timo Betcke\newline\url{t.betcke@ucl.ac.uk}}{Betcke}}
 
 %\institute[University College London]{Department of Mathematics \\
@@ -93,210 +94,210 @@ other collaborators
 
 \end{frame}
 
-\begin{frame}
-	\frametitle{Some Maths to set the stage}
-	
-    \begin{minipage}{5cm}
-    \begin{tikzpicture}[scale=1, framed,background rectangle/.style={ultra thick,draw=red, top color=blue}]
-        \draw (0,0) ellipse (2cm and 1cm);
-        \draw (.0,.2) node {$\Delta u = 0$};
-        \draw (-.5, -.5) node {$\Omega^{-}$};
-        \draw (1.2, .6) node {$\Gamma$};
-        \draw (-.5, -1.5) node {$\Omega^{+}$};
-    \end{tikzpicture}
-\end{minipage}
-\begin{minipage}{5cm}
-$$
-\Delta u(\bx) := \frac{\partial^2 u}{\partial x^2} + \frac{\partial^2 u}{\partial y^2} + \frac{\partial^2 u}{\partial z^2}
-$$
-Application areas: Heat diffusion, electrostatics, etc.
-
-\vspace{\baselineskip}
-Boundary condition:\\ $u(\bx) = f(\bx)$.
-
-
-\end{minipage}
-
-\vspace{.5cm}
-
-Represent solution as
-
-	\begin{tcolorbox}
-	$$
-	u(\bx) = \int_{\Gamma} g(\bx, \by)\phi(\by)ds(\by),\quad \bx\in\Omega 
-	$$
-	\end{tcolorbox}
-
-	Need to solve $V\phi = f$ with
-	$$
-	[V\phi](\bx) = \int_{\Gamma} g(\bx, \by)\phi(\by)ds(\by),\quad \bx\in\Gamma
-	$$
-
-	
-
-	
-\end{frame}
-	
-\begin{frame}{How to discretise the integral equation?}
-We want to solve $V\phi = f$. Introduce a triangulation $\mathcal{T}$ of the domain $\Omega$ into triangles $\tau_j$. Define basis fct.
-$$
-\phi_j(\bx) = \left\{\begin{array}{cc} 1 & \bx \in \tau_j\\ 0, & \text{ otherwise }\end{array}\right.
-$$
-We approximate $\phi = \sum_{j=1}^Nc_j\phi_j$. Multiplying with $\phi_i$ and integrating gives
-$$
-\int_{\Gamma}\phi_i(\bx)\left[V\phi\right](\bx)ds(\bx) = \int_{\Gamma}f(\bx)\phi_i(\bx)ds(\bx), i=1, \dots, N
-$$
-\begin{columns}[T]
-\begin{column}{0.48\textwidth}
-Solve $\mathbf{V}\mathbf{c} = \mathbf{b}$
-\begin{align}
-\mathbf{V}_{ij} &= \int_{\tau_i}\int_{\tau_j} g(\bx, \by)ds(\by) ds(\bx)\nonumber\\
-\mathbf{b}_i &= \int_{\Gamma}f(\bx)\phi_i(\bx)ds(\bx)\nonumber
-\end{align}
-\end{column}
- \begin{column}{0.48\textwidth}
-\vspace{-.5cm}
- \begin{center}
-\includegraphics[width=5cm]{../figs/sphere.pdf}
-\end{center}
- \end{column}
- \end{columns}  
-\end{frame}
-
-
-	
-\begin{frame} 
-	\frametitle{The Bempp boundary element software}
-
-\begin{center}
-\includegraphics[width=11cm]{../figs/applications}
-\end{center}
-
-\end{frame}
-
-\begin{frame}
-	\frametitle{The early C++ years of Bempp\footnote{\tiny W. \'{S}migaj et. al., \textit{Solving boundary integral problems with BEM++}, ACM Transactions on Mathematical Software 41 (2015), pp. 1 - 40}}
-	
-	\begin{tabular}{cc}
-		\begin{minipage}{6cm}
-			\begin{center}
-			\includegraphics[width=5cm]{../figs/bempp_cpp_objects}
-			\end{center}
-		\end{minipage} &
-		\begin{minipage}{5cm}
-			\small
-			\begin{itemize}
-			\item Complex object hierarchy
-			\item Highly templated code
-			\item Dependencies on complex packages (Boost, BLAS, Armadillo, Trilinos, DUNE, Intel TBB)
-			\end{itemize}
-		\end{minipage}
-	\end{tabular}
-	
-	\vspace{\baselineskip}
-	
-	\textbf{Python Interface}
-	
-	\begin{itemize}
-		\item Auto-generated with Swig
-		\item Thin layer on C++ code
-		\item Almost no logic in the Python layer, all handled by C++
-	\end{itemize}
-
-\begin{tcolorbox}
-Over time moved all high-level functions into Python, only kept low-level performance critical data structures in C++.
-\end{tcolorbox}
-
-\end{frame}
-
-
-
-\begin{frame}{Fast JIT compiled Galerkin BEM in Python}
-
-\begin{minipage}{5cm}
-\begin{small}
-{\color{blue} Numba for grid iterations}
-\begin{itemize}
-    \item Grid topology computations
-    \item Python callables
-    \item Routines on grid functions, ($L^2$-norm, etc.)
-    \item Fallback for operators
-\end{itemize}
-\end{small}
-\end{minipage}
-\begin{minipage}{5cm}
-\vspace{-.6cm}
-\begin{small}
-{\color{blue} OpenCL for matrix assembly/evaluation}
-\begin{itemize}
-    \item All potential evaluations
-    \item Mass matrices
-    \item FMM Near-Field
-\end{itemize}
-\end{small}
-\end{minipage}
-
-\vspace{\baselineskip}
-
-\begin{small}
-{\color{blue} Other technologies }
-\begin{itemize}
-    \item Scipy for spare matrix operations and iterative solvers
-    \item Numpy dense solvers
-\end{itemize}
-\end{small}
-
-\vspace{\baselineskip}
-
-\begin{tcolorbox}
-\begin{itemize}
-\item All logic controlled from Python (easy to hack on).
-\item Very fast SIMD optimized dense matrix assembly.
-\item But need lots of OpenCL C99 kernel code.
-\end{itemize}
-\end{tcolorbox}
-
-\end{frame}
-
-\begin{frame}
-    \frametitle{Characteristics of Bempp-cl\footnote{\tiny T. Betcke, M. Scroggs, \textit{Designing a high-performance boundary element library with OpenCL and Numba}, Computing in Science and Engineering, 23 (2021), pp. 18 - 28}}
-    \vspace{-.1cm}
-    \begin{center}
-        \begin{tabular}{cc}
-            \includegraphics[width=4cm]{../figs/bempp_cl_overview.png} & 
-            \includegraphics[width=4cm]{../figs/bempp_single_vs_double.png} \\
-            \begin{minipage}{5cm}
-                \vspace{-3cm}
-                \begin{itemize}
-                    \item Top: Structure of Bempp-cl
-                    \item Top-Right: AVX acceleration in Bempp-cl
-                    \item Bottom-Right: Offloading of a domain potential operator
-                \end{itemize}
-            \end{minipage}&
-            \includegraphics[width=4cm]{../figs/gpu_offloading.png} 
-        \end{tabular}
-    \end{center}
-\end{frame}
-
-\begin{frame}
-    \frametitle{Exafmm-t: High-Performance KIFMM\footnote{\tiny T. Wang, R. Yokota, L. Barba, \textit{ExaFMM: a high-performance fast multipole method library with C++ and Python interfaces}, Journal of Open Source Software 6(61), 3145}}
-    \vspace{-.1cm}
-    \begin{center}
-        \begin{tabular}{cc}
-            \begin{minipage}{5cm}
-                \begin{itemize}
-                    \item Kernel-Independent FMM library.
-                    \item Written in C++, Provides Python Interface.
-                    \item Highly efficient at higher accuracies.
-                \end{itemize}
-            \end{minipage} &
-            \includegraphics[width=5cm]{../figs/fmm_sketch.pdf} \\
-            \includegraphics[width=4cm]{../figs/near_far_decomposition.pdf} &
-            \includegraphics[width=4cm]{../figs/multipole_expansion.pdf}
-        \end{tabular}
-    \end{center}
-
-\end{frame}
+%\begin{frame}
+%	\frametitle{Some Maths to set the stage}
+%	
+%    \begin{minipage}{5cm}
+%    \begin{tikzpicture}[scale=1, framed,background rectangle/.style={ultra thick,draw=red, top color=blue}]
+%        \draw (0,0) ellipse (2cm and 1cm);
+%        \draw (.0,.2) node {$\Delta u = 0$};
+%        \draw (-.5, -.5) node {$\Omega^{-}$};
+%        \draw (1.2, .6) node {$\Gamma$};
+%        \draw (-.5, -1.5) node {$\Omega^{+}$};
+%    \end{tikzpicture}
+%\end{minipage}
+%\begin{minipage}{5cm}
+%$$
+%\Delta u(\bx) := \frac{\partial^2 u}{\partial x^2} + \frac{\partial^2 u}{\partial y^2} + \frac{\partial^2 u}{\partial z^2}
+%$$
+%Application areas: Heat diffusion, electrostatics, etc.
+%
+%\vspace{\baselineskip}
+%Boundary condition:\\ $u(\bx) = f(\bx)$.
+%
+%
+%\end{minipage}
+%
+%\vspace{.5cm}
+%
+%Represent solution as
+%
+%	\begin{tcolorbox}
+%	$$
+%	u(\bx) = \int_{\Gamma} g(\bx, \by)\phi(\by)ds(\by),\quad \bx\in\Omega 
+%	$$
+%	\end{tcolorbox}
+%
+%	Need to solve $V\phi = f$ with
+%	$$
+%	[V\phi](\bx) = \int_{\Gamma} g(\bx, \by)\phi(\by)ds(\by),\quad \bx\in\Gamma
+%	$$
+%
+%	
+%
+%	
+%\end{frame}
+%	
+%\begin{frame}{How to discretise the integral equation?}
+%We want to solve $V\phi = f$. Introduce a triangulation $\mathcal{T}$ of the domain $\Omega$ into triangles $\tau_j$. Define basis fct.
+%$$
+%\phi_j(\bx) = \left\{\begin{array}{cc} 1 & \bx \in \tau_j\\ 0, & \text{ otherwise }\end{array}\right.
+%$$
+%We approximate $\phi = \sum_{j=1}^Nc_j\phi_j$. Multiplying with $\phi_i$ and integrating gives
+%$$
+%\int_{\Gamma}\phi_i(\bx)\left[V\phi\right](\bx)ds(\bx) = \int_{\Gamma}f(\bx)\phi_i(\bx)ds(\bx), i=1, \dots, N
+%$$
+%\begin{columns}[T]
+%\begin{column}{0.48\textwidth}
+%Solve $\mathbf{V}\mathbf{c} = \mathbf{b}$
+%\begin{align}
+%\mathbf{V}_{ij} &= \int_{\tau_i}\int_{\tau_j} g(\bx, \by)ds(\by) ds(\bx)\nonumber\\
+%\mathbf{b}_i &= \int_{\Gamma}f(\bx)\phi_i(\bx)ds(\bx)\nonumber
+%\end{align}
+%\end{column}
+% \begin{column}{0.48\textwidth}
+%\vspace{-.5cm}
+% \begin{center}
+%\includegraphics[width=5cm]{../figs/sphere.pdf}
+%\end{center}
+% \end{column}
+% \end{columns}  
+%\end{frame}
+%
+%
+%	
+%\begin{frame} 
+%	\frametitle{The Bempp boundary element software}
+%
+%\begin{center}
+%\includegraphics[width=11cm]{../figs/applications}
+%\end{center}
+%
+%\end{frame}
+%
+%\begin{frame}
+%	\frametitle{The early C++ years of Bempp\footnote{\tiny W. \'{S}migaj et. al., \textit{Solving boundary integral problems with BEM++}, ACM Transactions on Mathematical Software 41 (2015), pp. 1 - 40}}
+%	
+%	\begin{tabular}{cc}
+%		\begin{minipage}{6cm}
+%			\begin{center}
+%			\includegraphics[width=5cm]{../figs/bempp_cpp_objects}
+%			\end{center}
+%		\end{minipage} &
+%		\begin{minipage}{5cm}
+%			\small
+%			\begin{itemize}
+%			\item Complex object hierarchy
+%			\item Highly templated code
+%			\item Dependencies on complex packages (Boost, BLAS, Armadillo, Trilinos, DUNE, Intel TBB)
+%			\end{itemize}
+%		\end{minipage}
+%	\end{tabular}
+%	
+%	\vspace{\baselineskip}
+%	
+%	\textbf{Python Interface}
+%	
+%	\begin{itemize}
+%		\item Auto-generated with Swig
+%		\item Thin layer on C++ code
+%		\item Almost no logic in the Python layer, all handled by C++
+%	\end{itemize}
+%
+%\begin{tcolorbox}
+%Over time moved all high-level functions into Python, only kept low-level performance critical data structures in C++.
+%\end{tcolorbox}
+%
+%\end{frame}
+%
+%
+%
+%\begin{frame}{Fast JIT compiled Galerkin BEM in Python}
+%
+%\begin{minipage}{5cm}
+%\begin{small}
+%{\color{blue} Numba for grid iterations}
+%\begin{itemize}
+%    \item Grid topology computations
+%    \item Python callables
+%    \item Routines on grid functions, ($L^2$-norm, etc.)
+%    \item Fallback for operators
+%\end{itemize}
+%\end{small}
+%\end{minipage}
+%\begin{minipage}{5cm}
+%\vspace{-.6cm}
+%\begin{small}
+%{\color{blue} OpenCL for matrix assembly/evaluation}
+%\begin{itemize}
+%    \item All potential evaluations
+%    \item Mass matrices
+%    \item FMM Near-Field
+%\end{itemize}
+%\end{small}
+%\end{minipage}
+%
+%\vspace{\baselineskip}
+%
+%\begin{small}
+%{\color{blue} Other technologies }
+%\begin{itemize}
+%    \item Scipy for spare matrix operations and iterative solvers
+%    \item Numpy dense solvers
+%\end{itemize}
+%\end{small}
+%
+%\vspace{\baselineskip}
+%
+%\begin{tcolorbox}
+%\begin{itemize}
+%\item All logic controlled from Python (easy to hack on).
+%\item Very fast SIMD optimized dense matrix assembly.
+%\item But need lots of OpenCL C99 kernel code.
+%\end{itemize}
+%\end{tcolorbox}
+%
+%\end{frame}
+%
+%\begin{frame}
+%    \frametitle{Characteristics of Bempp-cl\footnote{\tiny T. Betcke, M. Scroggs, \textit{Designing a high-performance boundary element library with OpenCL and Numba}, Computing in Science and Engineering, 23 (2021), pp. 18 - 28}}
+%    \vspace{-.1cm}
+%    \begin{center}
+%        \begin{tabular}{cc}
+%            \includegraphics[width=4cm]{../figs/bempp_cl_overview.png} & 
+%            \includegraphics[width=4cm]{../figs/bempp_single_vs_double.png} \\
+%            \begin{minipage}{5cm}
+%                \vspace{-3cm}
+%                \begin{itemize}
+%                    \item Top: Structure of Bempp-cl
+%                    \item Top-Right: AVX acceleration in Bempp-cl
+%                    \item Bottom-Right: Offloading of a domain potential operator
+%                \end{itemize}
+%            \end{minipage}&
+%            \includegraphics[width=4cm]{../figs/gpu_offloading.png} 
+%        \end{tabular}
+%    \end{center}
+%\end{frame}
+%
+%\begin{frame}
+%    \frametitle{Exafmm-t: High-Performance KIFMM\footnote{\tiny T. Wang, R. Yokota, L. Barba, \textit{ExaFMM: a high-performance fast multipole method library with C++ and Python interfaces}, Journal of Open Source Software 6(61), 3145}}
+%    \vspace{-.1cm}
+%    \begin{center}
+%        \begin{tabular}{cc}
+%            \begin{minipage}{5cm}
+%                \begin{itemize}
+%                    \item Kernel-Independent FMM library.
+%                    \item Written in C++, Provides Python Interface.
+%                    \item Highly efficient at higher accuracies.
+%                \end{itemize}
+%            \end{minipage} &
+%            \includegraphics[width=5cm]{../figs/fmm_sketch.pdf} \\
+%            \includegraphics[width=4cm]{../figs/near_far_decomposition.pdf} &
+%            \includegraphics[width=4cm]{../figs/multipole_expansion.pdf}
+%        \end{tabular}
+%    \end{center}
+%
+%\end{frame}
     
 %\begin{frame}
 %    \frametitle{Coupling Bempp-cl and Exafmm-t}
@@ -316,14 +317,35 @@ Over time moved all high-level functions into Python, only kept low-level perfor
 %
 %\end{frame}
 
+\begin{frame}
+\frametitle{About me}
+
+\begin{tabular}{ccc}
+\includegraphics[width=3cm]{../figs/ucl_maths} &
+\includegraphics[width=3cm]{../figs/ucl_arc}  &
+\includegraphics[width=3cm]{../figs/excalibur}
+\end{tabular}
+
+\vspace{2\baselineskip}
+
+
+\begin{itemize}
+\item Professor of Computational Mathematics @UCL Maths
+\item Associate Director and Director of Research at UCL ARC
+\item UCL Lead for Excalibur projects on coupling at exascale, and software generation
+for novel architectures
+\item Lover of anything Scientific Computing, Rust, and Python
+\end{itemize}
+\end{frame}
+
 
 \begin{frame}
-\frametitle{Why large-scale BEM?}
+\frametitle{Poisson Boltzmann Models}
 
     \vspace{.3cm}
 
     \begin{minipage}{5cm}
-        Solve Poisson-Boltzmann equation
+        Poisson-Boltzmann Equation
         \begin{align}
             \Delta\phi_1 &= \frac{1}{\epsilon_1}\sum_{k}q_k\delta(\mathbf{r}, \mathbf{r}_k)~\text{in }\Omega_1\nonumber\\
             (\Delta - \kappa^2)\phi_2 &= 0~\text{in }\Omega_2\nonumber
@@ -348,6 +370,9 @@ Over time moved all high-level functions into Python, only kept low-level perfor
 
 
 \end{frame}
+
+
+
 
 \begin{frame}
 \frametitle{Exascale FEM/BEM modeling}
@@ -396,67 +421,67 @@ Want to scale up to billions surface dofs.
 
 \end{frame}
 
-\begin{frame}
-\frametitle{Deconstructing a BEM operator call}
-
-\begin{minipage}{5cm}
-\begin{tcolorbox}
-\small
-Discrete integral operator evaluation takes the form
-$$
-Vx = P_{dual}^T(G - C)P_{dom}\overline{x} + S\overline{x}
-$$
-
-\begin{itemize}
-\item $G$ dense.
-\item All other matrices highly sparse.
-\end{itemize}
-\end{tcolorbox}
-
-\end{minipage}
-\begin{minipage}{5cm}
-\small
-\begin{itemize}
-\item $P_{dom/dual}$: Map from domain/dual space cefficients to values at quadrature points
-\item $G$ matrix of Green's fct. evaluations at regular Gauss points
-\item $C$: Correction matrix containing contribution of $G$ associated with adjacent triangles
-\item $S$: Contributions of singular quadrature rule on adjacent triangles
-\end{itemize}
-\end{minipage}
-
-\vspace{\baselineskip}
-
-\begin{itemize}
-\item Parallel fast methods ($H$-matrices/FMM) for $G$.
-\item Distributed sparse linear algebra for everything else.
-\end{itemize}
-
-\end{frame}
-
-\begin{frame}
-    \frametitle{The correction matrix}
-
-    \begin{center}
-        \includegraphics[width=10cm]{../figs/triangles.png}
-    \end{center}
-
-    Problem: Any fast code for $G$ also evaluates the near-field.
-    Near-field can contain adjacent triangles (singular quadrature rules), and
-    non-adjacent triangles (standard triangle Gauss rule).
-
-    \vspace{.5cm}
-
-    The sources and target points in the FMM are arising from the
-    non-singular quadrature rule.
-
-    \vspace{.5cm}
-
-    Solution: After FMM evaluation subtract out the regular quadrature rule
-    contribution from adjacent triangles and add in the correct singular quadrature
-    rule contribution.
-
-\end{frame}
-
+%\begin{frame}
+%\frametitle{Deconstructing a BEM operator call}
+%
+%\begin{minipage}{5cm}
+%\begin{tcolorbox}
+%\small
+%Discrete integral operator evaluation takes the form
+%$$
+%Vx = P_{dual}^T(G - C)P_{dom}\overline{x} + S\overline{x}
+%$$
+%
+%\begin{itemize}
+%\item $G$ dense.
+%\item All other matrices highly sparse.
+%\end{itemize}
+%\end{tcolorbox}
+%
+%\end{minipage}
+%\begin{minipage}{5cm}
+%\small
+%\begin{itemize}
+%\item $P_{dom/dual}$: Map from domain/dual space cefficients to values at quadrature points
+%\item $G$ matrix of Green's fct. evaluations at regular Gauss points
+%\item $C$: Correction matrix containing contribution of $G$ associated with adjacent triangles
+%\item $S$: Contributions of singular quadrature rule on adjacent triangles
+%\end{itemize}
+%\end{minipage}
+%
+%\vspace{\baselineskip}
+%
+%\begin{itemize}
+%\item Parallel fast methods ($H$-matrices/FMM) for $G$.
+%\item Distributed sparse linear algebra for everything else.
+%\end{itemize}
+%
+%\end{frame}
+%
+%\begin{frame}
+%    \frametitle{The correction matrix}
+%
+%    \begin{center}
+%        \includegraphics[width=10cm]{../figs/triangles.png}
+%    \end{center}
+%
+%    Problem: Any fast code for $G$ also evaluates the near-field.
+%    Near-field can contain adjacent triangles (singular quadrature rules), and
+%    non-adjacent triangles (standard triangle Gauss rule).
+%
+%    \vspace{.5cm}
+%
+%    The sources and target points in the FMM are arising from the
+%    non-singular quadrature rule.
+%
+%    \vspace{.5cm}
+%
+%    Solution: After FMM evaluation subtract out the regular quadrature rule
+%    contribution from adjacent triangles and add in the correct singular quadrature
+%    rule contribution.
+%
+%\end{frame}
+%
 
 
 \begin{frame}
@@ -494,7 +519,7 @@ $$
 \end{frame}
 
 \begin{frame}
-\frametitle{Along came Rust}
+\frametitle{Scientific computing with Rust}
 \begin{minipage}{5cm}
 \begin{itemize}
 \item Modern language design.
@@ -511,155 +536,8 @@ $$
 \vspace{2\baselineskip}
 
 \begin{tcolorbox}
-Design a set of micro-libraries in Rust that can be easily composed into large parallel FEM/BEM applications.
+Design a set of libraries in Rust that can be easily composed into large parallel FEM/BEM applications.
 \end{tcolorbox}
-
-\end{frame}
-
-\begin{frame}
-\frametitle{A set of micro-libraries in Rust}
-
-	
-	{Blue}: Finished or in work. {Red}: In planning
-	
-	{\small
-	\begin{center}
-	
-	\begin{tabular}{|l|l|}
-	\hline
-	{\color{blue}tree} & Fast distributed octree management\\
-	\hline
-	{\color{blue}compression} & Linear algebra tools for low-rank compression\\
-	\hline
-	{\color{red}field} & Field translation operators\\
-	\hline
-	{\color{blue}green-kernel} & Direct evaluation of Green's functions\\
-	\hline
-	{\color{blue}quadrature} & Collection of quadrature rules\\
-	\hline
-	{\color{blue}element} & Finite element definitions\\
-	\hline
-	{\color{red}grid} & Distributed management of surface grids\\
-	\hline
-	{\color{red}fmm} & High-Level distributed FMM loops\\
-	\hline
-	{\color{red}surface-diff-op} & Distributed assembly of surface differential operators\\
-	\hline
-	{\color{red}bempp} & High-Level distributed BEM interface\\
-	\hline
-	
-	\end{tabular}
-	
-		
-	\end{center}
-	}
-	\begin{itemize}
-	\item All libraries independent projects
-	\item MPI support where necessary
-	\item C interface + Python bindings for most functionality
-	\item From October team of 1 PhD, 1 Postdoc + Research Software Engineers
-	
-	\end{itemize}
-	
-\end{frame}
-
-\begin{frame}
-\frametitle{rusty-tree}
-
-\begin{minipage}{5cm}
-\begin{itemize}
-\item Modeled on Sundar et. al\footnotemark
-\item Distributed load-balancing, 2:1 refinement
-\item Full Python interface
-\item Can use Rust or Python MPI communicator
-\end{itemize}
-\end{minipage}
-\begin{minipage}{5cm}
-\includegraphics[width=5cm]{../figs/rusty_tree}
-\end{minipage}
-
-\footnotetext{\tiny H. Sunar, R. S. Sampath, G. Biros, \textit{Bottom Up Construction and 2:1 Balance Refinement of Linear
-Octrees in Parallel}, 30 (2008, pp. 2675 - 2708}
-
-\end{frame}
-
-\begin{frame}
-\frametitle{rusty-compression}
-\begin{minipage}{5cm}
-
-\begin{tcolorbox}
-Low-rank compression
-$$
-A\approx UV^H
-$$
-
-$A\in\mathbb{C}^{m\times n}$, $U\in\mathbb{C}^{m\times k}$, $V\in\mathbb{C}^{k\times n}$.
-\end{tcolorbox}
-\end{minipage}
-\begin{minipage}{5cm}
-\begin{itemize}
-\item Dense QR, SVD decomposition
-\item Interpolative decompositions
-\item Randomized low-rank decompositions
-\end{itemize}
-\end{minipage}
-
-\vspace{2\baselineskip}
-
-\begin{itemize}
-\item Required for algebraic compression of translation operators.
-\item Currently uses Blas/Lapack/ndarray.
-\item Plan to rebase on new linear algebra core.
-\end{itemize}
-\end{frame}
-
-\begin{frame}
-\frametitle{rusty-element}
-
-\begin{center}
-\begin{tabular}{cc}
-\includegraphics[width=5cm]{../figs/rusty_element} &
-\includegraphics[width=4cm]{../figs/basix_elements}\\
-Reference Cell Trait & {\small Basix elements}
-\end{tabular}
-\end{center}
-
-\begin{itemize}
-\item Modeled on Basix (FEeniCS finite element evaluation library).
-\item Generic interface and implementation of element definitions.
-\item Support for higher order triangular and quadrilateral elements.
-\item Separate from grid library (grid library does data distribution and
-iteration, rusty-element provides element information).
-\end{itemize}
-
-\end{frame}
-
-\begin{frame}
-\frametitle{Householder - A new linear algebra kernel in Rust}
-
-\begin{center}
-\includegraphics[width=8cm]{../figs/householder}
-\end{center}
-
-\begin{itemize}
-\item New dense/sparse linear algebra kernel in Rust.
-\item Based on Rust implementation of expression templates (similar to C++ eigen).
-\item Supported by ARCHER2 eSAFE funding.
-\end{itemize}
-
-\end{frame}
-
-\begin{frame}
-\frametitle{Diving into Rust with Householder}
-
-\begin{itemize}
-\item Matrix traits
-\item Mutable and immutable access
-\item Basic data containers (vectors and slices)
-\item Reference types and lifetimes
-\item A generic matrix structure
-\item Documentation and unit tests
-\end{itemize}
 
 \end{frame}
 
@@ -718,17 +596,245 @@ Still lots of moving parts in the ecosystem but an enormous amount of developmen
 
 \end{frame}
 
+\begin{frame}
+\frametitle{What makes Rust great for HPC?}
+
+\begin{itemize}
+	\item Fully built on top of LLVM.
+	\item Strong and rich type system with traits based generics resolved at compile time.
+	\item All type conversions must be explicit (no accidental assignment of a 64 bit integer to a 32 bit variable).
+	\item Very simple foreign function interface to integrate existing C code without overhead.
+	\item Simple but powerful error handling.
+\end{itemize}
+
+\vspace{\baselineskip}
+
+{\color{red} ...However, CUDA support still very early stages (but OpenCL works well)}
+
+\end{frame}
+
+
+
+%\begin{frame}
+%\frametitle{Example: solvers-tree}
+%
+%\begin{minipage}{5cm}
+%\begin{itemize}
+%\item Modeled on Sundar et. al\footnotemark
+%\item Distributed load-balancing, 2:1 refinement
+%\item Runs on ARCHER2 using Rust MPI bindings
+%\end{itemize}
+%\end{minipage}
+%\begin{minipage}{5cm}
+%\includegraphics[width=5cm]{../figs/rusty_tree}
+%\end{minipage}
+%
+%\footnotetext{\tiny H. Sunar, R. S. Sampath, G. Biros, \textit{Bottom Up Construction and 2:1 Balance Refinement of Linear
+%Octrees in Parallel}, 30 (2008, pp. 2675 - 2708}
+%
+%\end{frame}
+
+%\begin{frame}
+%\frametitle{rusty-compression}
+%\begin{minipage}{5cm}
+%
+%\begin{tcolorbox}
+%Low-rank compression
+%$$
+%A\approx UV^H
+%$$
+%
+%$A\in\mathbb{C}^{m\times n}$, $U\in\mathbb{C}^{m\times k}$, $V\in\mathbb{C}^{k\times n}$.
+%\end{tcolorbox}
+%\end{minipage}
+%\begin{minipage}{5cm}
+%\begin{itemize}
+%\item Dense QR, SVD decomposition
+%\item Interpolative decompositions
+%\item Randomized low-rank decompositions
+%\end{itemize}
+%\end{minipage}
+%
+%\vspace{2\baselineskip}
+%
+%\begin{itemize}
+%\item Required for algebraic compression of translation operators.
+%\item Currently uses Blas/Lapack/ndarray.
+%\item Plan to rebase on new linear algebra core.
+%\end{itemize}
+%\end{frame}
+
+%\begin{frame}
+%\frametitle{Example: solvers-element}
+%
+%\begin{center}
+%\begin{tabular}{cc}
+%\includegraphics[width=5cm]{../figs/rusty_element} &
+%\includegraphics[width=4cm]{../figs/basix_elements}\\
+%Reference Cell Trait & {\small Basix elements}
+%\end{tabular}
+%\end{center}
+%
+%\begin{itemize}
+%\item Modeled on Basix (FEeniCS finite element evaluation library).
+%\item Generic interface and implementation of element definitions.
+%\item Support for higher order triangular and quadrilateral elements.
+%\item Separate from grid library (grid library does data distribution and
+%iteration, rusty-element provides element information).
+%\end{itemize}
+%
+%\end{frame}
 
 \begin{frame}
-\frametitle{Some final messages}
+\frametitle{Example: A new approach to large scale linear algebra}
+
 \begin{itemize}
-\item Using Python + JIT (e.g. Numba) works well for simple array oriented algorithms. More problematic for complex algorithms.
-\item We are at the start of a multi-year journey to develop very large-scale integral equation solvers in Rust.
-\item Rust is ready to be looked at by Scientific Computing Community (though far away from the level of maturity of the C++ ecosystem)
-\item Rust makes little sense when legacy C++ code exists or there is need for heterogeneous compute with SyCL or Cuda.
-\item But consider and evaluate Rust if you start a completely new project.
+\item Joint work with Jed Brown (Colorado Boulder)
+\item Design traits (and prototype implementations) that provide a unified approach
+        to linear algebra in finite and infinite dimensional spaces
+\item Currently implementing minimum viable product
+\item Want to have a modern Rust native sparse linear algebra kernel
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}
+\frametitle{Novel unified linear algebra traits}
+
+\begin{center}
+\begin{tabular}{cc}
+\includegraphics[width=5cm]{../figs/operator} &
+\includegraphics[width=5cm]{../figs/linear_space} 
+\end{tabular}
+\end{center}
+
+\begin{itemize}
+\item Use subtraits to model normed spaces, inner product spaces, etc.
+\item Can build iterative solvers on top of traits without knowledge of underlying implementation
 \end{itemize}
 \end{frame}
+
+
+%
+%\begin{frame}
+%\frametitle{Householder - A new linear algebra kernel in Rust}
+%
+%\begin{center}
+%\includegraphics[width=8cm]{../figs/householder}
+%\end{center}
+%
+%\begin{itemize}
+%\item New dense/sparse linear algebra kernel in Rust.
+%\item Based on Rust implementation of expression templates (similar to C++ eigen).
+%\item Supported by ARCHER2 eSAFE funding.
+%\end{itemize}
+%
+%\end{frame}
+
+\begin{frame}
+\frametitle{Early stage Rust solver infrastructure}
+
+		
+	{\small
+	\begin{center}
+	
+	\begin{tabular}{|l|l|}
+	\hline
+	{\color{blue}tree} & Fast distributed octree management\\
+	\hline
+	{\color{blue}grid} & Distributed parallel grids\\
+	\hline
+	{\color{blue}element} & Tabulation and evaluation of finite elements\\
+	\hline
+	{\color{blue}green-kernel} & Direct evaluation of Green's functions\\
+	\hline
+	{\color{blue}quadrature} & Collection of quadrature rules\\
+	\hline
+	{\color{blue}fmm} & Distributed fast multipole methods\\
+	\hline	
+	\end{tabular}
+	
+		
+	\end{center}
+	}
+
+	\begin{itemize}
+\item Using Python + JIT (e.g. Numba) works well for simple array oriented algorithms. More problematic for complex algorithms.
+\item We are at the start of a multi-year journey to develop very large-scale integral equation solvers in Rust.
+\item Rust is ready for scientific computing and allows us to rethink how to design modern computational libraries.
+\end{itemize}
+	
+\end{frame}
+
+
+%\begin{frame}
+%\frametitle{Diving into Rust with Householder}
+%
+%\begin{itemize}
+%\item Matrix traits
+%\item Mutable and immutable access
+%\item Basic data containers (vectors and slices)
+%\item Reference types and lifetimes
+%\item A generic matrix structure
+%\item Documentation and unit tests
+%\end{itemize}
+%
+%\end{frame}
+%
+%\begin{frame}
+%\frametitle{The Rust Scientific Computing ecosystem}
+%
+%{\tiny
+%
+%\begin{tabular}{cc}
+%\begin{minipage}[t]{5cm}
+%{\color{blue} Core utilities}
+%\begin{itemize}
+%\item Num - Traits and utility routines for floating point types.
+%\item Cauchy - A complex scalar type library (uses Num).
+%\item approx - Unit test routines for floating point types.
+%\item Serde - Serialization library.
+%\end{itemize}
+%\end{minipage} & 
+%\begin{minipage}[t]{5cm}
+%{\color{blue}Parallelization}
+%\begin{itemize}
+%\item rsmpi - MPI Interface for Rust.
+%\item Rayon - Fork/Join threading, parallel loops and iterators.
+%\item async/await (Tokio, etc.) - frameworks for asynchroneous execution.
+%\end{itemize}
+%\end{minipage}\\
+%\begin{minipage}[t]{5cm}
+%{\color{blue} Linear Algebra/Machine Learning}
+%\begin{itemize}
+%\item ndarray - multidimensional array type in Rust.
+%\item nalgebra - Rust linear algebra library with Lapack bindings.
+%\item householder - Early stages linear algebra library.
+%\item Linfa - Native machine learning in Rust.
+%\item tensorflow - Rust bindings to tensorflow.
+%\item petsc-rs - Rust bindings for Petsc.
+%\end{itemize}
+%\end{minipage} &
+%\begin{minipage}[t]{5cm}
+%{\color{blue} Language bindings}
+%\begin{itemize}
+%\item PyO3 - Binding complex Rust types to Python.
+%\item maturin - Simple tools to wrap Rust C API bindings with Python cffi.
+%\item Any language that supports C bindings can talk to Rust easily.
+%\end{itemize}
+%\end{minipage}
+%
+%\end{tabular}
+%
+%}
+%
+%\vspace{\baselineskip}
+%
+%\begin{tcolorbox}
+%Still lots of moving parts in the ecosystem but an enormous amount of development happening.
+%\end{tcolorbox}
+%
+%\end{frame}
 
 
 \end{document}
