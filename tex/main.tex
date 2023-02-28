@@ -50,7 +50,7 @@
 \end{tikzpicture}%
 }
 
-\title{A rusty roadmap to integral equations at exascale}
+\title{Towards integral equations at exascale in Rust}
 %\author{\texorpdfstring{Timo Betcke\newline\url{t.betcke@ucl.ac.uk}}{Betcke}}
 
 %\institute[University College London]{Department of Mathematics \\
@@ -433,31 +433,6 @@ $$
 
 \end{frame}
 
-\begin{frame}
-    \frametitle{The correction matrix}
-
-    \begin{center}
-        \includegraphics[width=10cm]{../figs/triangles.png}
-    \end{center}
-
-    Problem: Any fast code for $G$ also evaluates the near-field.
-    Near-field can contain adjacent triangles (singular quadrature rules), and
-    non-adjacent triangles (standard triangle Gauss rule).
-
-    \vspace{.5cm}
-
-    The sources and target points in the FMM are arising from the
-    non-singular quadrature rule.
-
-    \vspace{.5cm}
-
-    Solution: After FMM evaluation subtract out the regular quadrature rule
-    contribution from adjacent triangles and add in the correct singular quadrature
-    rule contribution.
-
-\end{frame}
-
-
 
 \begin{frame}
 \frametitle{Software Technologies}
@@ -494,7 +469,7 @@ $$
 \end{frame}
 
 \begin{frame}
-\frametitle{Along came Rust}
+\frametitle{Why Rust?}
 \begin{minipage}{5cm}
 \begin{itemize}
 \item Modern language design.
@@ -511,157 +486,244 @@ $$
 \vspace{2\baselineskip}
 
 \begin{tcolorbox}
-Design a set of micro-libraries in Rust that can be easily composed into large parallel FEM/BEM applications.
+Design a set of component libraries that can be easily composed into large-scale FEM/BEM applications.
 \end{tcolorbox}
 
 \end{frame}
 
 \begin{frame}
-\frametitle{A set of micro-libraries in Rust}
-
-	
-	{Blue}: Finished or in work. {Red}: In planning
-	
-	{\small
-	\begin{center}
-	
-	\begin{tabular}{|l|l|}
-	\hline
-	{\color{blue}tree} & Fast distributed octree management\\
-	\hline
-	{\color{blue}compression} & Linear algebra tools for low-rank compression\\
-	\hline
-	{\color{red}field} & Field translation operators\\
-	\hline
-	{\color{blue}green-kernel} & Direct evaluation of Green's functions\\
-	\hline
-	{\color{blue}quadrature} & Collection of quadrature rules\\
-	\hline
-	{\color{blue}element} & Finite element definitions\\
-	\hline
-	{\color{red}grid} & Distributed management of surface grids\\
-	\hline
-	{\color{red}fmm} & High-Level distributed FMM loops\\
-	\hline
-	{\color{red}surface-diff-op} & Distributed assembly of surface differential operators\\
-	\hline
-	{\color{red}bempp} & High-Level distributed BEM interface\\
-	\hline
-	
-	\end{tabular}
-	
-		
-	\end{center}
-	}
-	\begin{itemize}
-	\item All libraries independent projects
-	\item MPI support where necessary
-	\item C interface + Python bindings for most functionality
-	\item From October team of 1 PhD, 1 Postdoc + Research Software Engineers
-	
-	\end{itemize}
-	
-\end{frame}
-
-\begin{frame}
-\frametitle{rusty-tree}
-
-\begin{minipage}{5cm}
-\begin{itemize}
-\item Modeled on Sundar et. al\footnotemark
-\item Distributed load-balancing, 2:1 refinement
-\item Full Python interface
-\item Can use Rust or Python MPI communicator
-\end{itemize}
-\end{minipage}
-\begin{minipage}{5cm}
-\includegraphics[width=5cm]{../figs/rusty_tree}
-\end{minipage}
-
-\footnotetext{\tiny H. Sunar, R. S. Sampath, G. Biros, \textit{Bottom Up Construction and 2:1 Balance Refinement of Linear
-Octrees in Parallel}, 30 (2008, pp. 2675 - 2708}
-
-\end{frame}
-
-\begin{frame}
-\frametitle{rusty-compression}
-\begin{minipage}{5cm}
-
-\begin{tcolorbox}
-Low-rank compression
-$$
-A\approx UV^H
-$$
-
-$A\in\mathbb{C}^{m\times n}$, $U\in\mathbb{C}^{m\times k}$, $V\in\mathbb{C}^{k\times n}$.
-\end{tcolorbox}
-\end{minipage}
-\begin{minipage}{5cm}
-\begin{itemize}
-\item Dense QR, SVD decomposition
-\item Interpolative decompositions
-\item Randomized low-rank decompositions
-\end{itemize}
-\end{minipage}
-
-\vspace{2\baselineskip}
-
-\begin{itemize}
-\item Required for algebraic compression of translation operators.
-\item Currently uses Blas/Lapack/ndarray.
-\item Plan to rebase on new linear algebra core.
-\end{itemize}
-\end{frame}
-
-\begin{frame}
-\frametitle{rusty-element}
+\frametitle{Rust ownership}
 
 \begin{center}
-\begin{tabular}{cc}
-\includegraphics[width=5cm]{../figs/rusty_element} &
-\includegraphics[width=4cm]{../figs/basix_elements}\\
-Reference Cell Trait & {\small Basix elements}
-\end{tabular}
+\includegraphics[width=10cm]{../figs/rust_ownership}
 \end{center}
 
 \begin{itemize}
-\item Modeled on Basix (FEeniCS finite element evaluation library).
-\item Generic interface and implementation of element definitions.
-\item Support for higher order triangular and quadrilateral elements.
-\item Separate from grid library (grid library does data distribution and
-iteration, rusty-element provides element information).
+\item Every variable in Rust has a unique owner
+\item Assigning s1 to s2 transfers ownership of the string.
 \end{itemize}
+
 
 \end{frame}
 
 \begin{frame}
-\frametitle{Householder - A new linear algebra kernel in Rust}
+\frametitle{The Borrow Checker}
+\begin{minipage}{5cm}
+\includegraphics[width=5cm]{../figs/rust_borrow}
+\end{minipage}
+\begin{minipage}{5cm}
+\footnotesize
+\begin{itemize}
+\item Creating references is called borrowing.
+\item We are not allowed to mutate a variable after it was borrowed.
+\item We can have either one mutable borrow or many non-mutable borrows, not both at the same time.
+\end{itemize}
+\end{minipage}
 
 \begin{center}
-\includegraphics[width=8cm]{../figs/householder}
+\includegraphics[width=11cm]{../figs/rust_mut}
 \end{center}
 
+\end{frame}
+
+\begin{frame}{What is already done?}
+\begin{minipage}{5cm}
+\tiny
+\textbf{Grids and finite elements}\\
 \begin{itemize}
-\item New dense/sparse linear algebra kernel in Rust.
-\item Based on Rust implementation of expression templates (similar to C++ eigen).
-\item Supported by ARCHER2 eSAFE funding.
+\item Various order Lagrange elements on triangles
+\item Order 1 and order 2 basis function on quadrilaterals
+\item Degree 1 Raviart-Thomas functions on triangles
+\item Grids on single nodes and prototype multi-node grid management
 \end{itemize}
+\end{minipage}
+\begin{minipage}{5cm}
+\tiny
+\textbf{FMM}\\
+\begin{itemize}
+\item Distributed balanced octrees are implemented
+\item Single note experimental kernel independent FMM is working
+\item Currently working on distributed FMM loop
+\end{itemize}
+\end{minipage}\\
+
+\vspace{\baselineskip}
+
+\begin{minipage}{5cm}
+\tiny
+\textbf{Integration}\\
+\begin{itemize}
+\item Standard Gauss type rules for regular integrals over triangles and quadrilaterals
+\item Have fully numerical singular integrators on triangles (based on Erichsen/Sauter)
+\item Singular integrators on quadrilaterals almost done
+\end{itemize}
+\end{minipage}
+\begin{minipage}{5cm}
+\tiny
+\textbf{Other work}\\
+\begin{itemize}
+\item Developing core sparse linear algebra data structures
+\item Rust native dense matrix decompositions for randomized linear algebra
+\item SIMD Optimized kernel evaluation
+\item C API and Python interfaces
+\end{itemize}
+\end{minipage}\\
+
+
+
 
 \end{frame}
 
-\begin{frame}
-\frametitle{Diving into Rust with Householder}
 
-\begin{itemize}
-\item Matrix traits
-\item Mutable and immutable access
-\item Basic data containers (vectors and slices)
-\item Reference types and lifetimes
-\item A generic matrix structure
-\item Documentation and unit tests
-\end{itemize}
-
-\end{frame}
+%\begin{frame}
+%\frametitle{A set of micro-libraries in Rust}
+%
+%	
+%	{Blue}: Finished or in work. {Red}: In planning
+%	
+%	{\small
+%	\begin{center}
+%	
+%	\begin{tabular}{|l|l|}
+%	\hline
+%	{\color{blue}tree} & Fast distributed octree management\\
+%	\hline
+%	{\color{blue}compression} & Linear algebra tools for low-rank compression\\
+%	\hline
+%	{\color{red}field} & Field translation operators\\
+%	\hline
+%	{\color{blue}green-kernel} & Direct evaluation of Green's functions\\
+%	\hline
+%	{\color{blue}quadrature} & Collection of quadrature rules\\
+%	\hline
+%	{\color{blue}element} & Finite element definitions\\
+%	\hline
+%	{\color{red}grid} & Distributed management of surface grids\\
+%	\hline
+%	{\color{red}fmm} & High-Level distributed FMM loops\\
+%	\hline
+%	{\color{red}surface-diff-op} & Distributed assembly of surface differential operators\\
+%	\hline
+%	{\color{red}bempp} & High-Level distributed BEM interface\\
+%	\hline
+%	
+%	\end{tabular}
+%	
+%		
+%	\end{center}
+%	}
+%	\begin{itemize}
+%	\item All libraries independent projects
+%	\item MPI support where necessary
+%	\item C interface + Python bindings for most functionality
+%	\item From October team of 1 PhD, 1 Postdoc + Research Software Engineers
+%	
+%	\end{itemize}
+%	
+%\end{frame}
+%
+%
+%
+%
+%\begin{frame}
+%\frametitle{rusty-tree}
+%
+%\begin{minipage}{5cm}
+%\begin{itemize}
+%\item Modeled on Sundar et. al\footnotemark
+%\item Distributed load-balancing, 2:1 refinement
+%\item Full Python interface
+%\item Can use Rust or Python MPI communicator
+%\end{itemize}
+%\end{minipage}
+%\begin{minipage}{5cm}
+%\includegraphics[width=5cm]{../figs/rusty_tree}
+%\end{minipage}
+%
+%\footnotetext{\tiny H. Sunar, R. S. Sampath, G. Biros, \textit{Bottom Up Construction and 2:1 Balance Refinement of Linear
+%Octrees in Parallel}, 30 (2008, pp. 2675 - 2708}
+%
+%\end{frame}
+%
+%\begin{frame}
+%\frametitle{rusty-compression}
+%\begin{minipage}{5cm}
+%
+%\begin{tcolorbox}
+%Low-rank compression
+%$$
+%A\approx UV^H
+%$$
+%
+%$A\in\mathbb{C}^{m\times n}$, $U\in\mathbb{C}^{m\times k}$, $V\in\mathbb{C}^{k\times n}$.
+%\end{tcolorbox}
+%\end{minipage}
+%\begin{minipage}{5cm}
+%\begin{itemize}
+%\item Dense QR, SVD decomposition
+%\item Interpolative decompositions
+%\item Randomized low-rank decompositions
+%\end{itemize}
+%\end{minipage}
+%
+%\vspace{2\baselineskip}
+%
+%\begin{itemize}
+%\item Required for algebraic compression of translation operators.
+%\item Currently uses Blas/Lapack/ndarray.
+%\item Plan to rebase on new linear algebra core.
+%\end{itemize}
+%\end{frame}
+%
+%\begin{frame}
+%\frametitle{rusty-element}
+%
+%\begin{center}
+%\begin{tabular}{cc}
+%\includegraphics[width=5cm]{../figs/rusty_element} &
+%\includegraphics[width=4cm]{../figs/basix_elements}\\
+%Reference Cell Trait & {\small Basix elements}
+%\end{tabular}
+%\end{center}
+%
+%\begin{itemize}
+%\item Modeled on Basix (FEeniCS finite element evaluation library).
+%\item Generic interface and implementation of element definitions.
+%\item Support for higher order triangular and quadrilateral elements.
+%\item Separate from grid library (grid library does data distribution and
+%iteration, rusty-element provides element information).
+%\end{itemize}
+%
+%\end{frame}
+%
+%\begin{frame}
+%\frametitle{Householder - A new linear algebra kernel in Rust}
+%
+%\begin{center}
+%\includegraphics[width=8cm]{../figs/householder}
+%\end{center}
+%
+%\begin{itemize}
+%\item New dense/sparse linear algebra kernel in Rust.
+%\item Based on Rust implementation of expression templates (similar to C++ eigen).
+%\item Supported by ARCHER2 eSAFE funding.
+%\end{itemize}
+%
+%\end{frame}
+%
+%\begin{frame}
+%\frametitle{Diving into Rust with Householder}
+%
+%\begin{itemize}
+%\item Matrix traits
+%\item Mutable and immutable access
+%\item Basic data containers (vectors and slices)
+%\item Reference types and lifetimes
+%\item A generic matrix structure
+%\item Documentation and unit tests
+%\end{itemize}
+%
+%\end{frame}
 
 \begin{frame}
 \frametitle{The Rust Scientific Computing ecosystem}
@@ -691,7 +753,6 @@ iteration, rusty-element provides element information).
 \begin{itemize}
 \item ndarray - multidimensional array type in Rust.
 \item nalgebra - Rust linear algebra library with Lapack bindings.
-\item householder - Early stages linear algebra library.
 \item Linfa - Native machine learning in Rust.
 \item tensorflow - Rust bindings to tensorflow.
 \item petsc-rs - Rust bindings for Petsc.
